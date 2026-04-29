@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/deepmap/oapi-codegen/HEAD/configuration-schema.json
+package: client
+output: ''
+import-mapping:
+  ./autoscaling.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/autoscaling"
+  ./blueprints.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/blueprints"
+  ./disks.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/disks"
+  ./events.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/events"
+  ./eventtypes.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/eventtypes"
+  ./jobs.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/jobs"
+  ./logs.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/logs"
+  ./maintenance.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/maintenance"
+  ./metrics.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/metrics"
+  ./notifications.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/notifications"
+  ./postgres.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/postgres"
+  ./webhooks.yaml: "github.com/render-oss/steampipe-plugin-render/render/client/webhooks"
