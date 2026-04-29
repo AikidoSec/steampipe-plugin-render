@@ -5,7 +5,7 @@ description: "Query logical export jobs of Render Postgres databases."
 
 # Table: render_postgres_export
 
-Logical exports (dumps) of Render-managed Postgres databases. Each row is one export job. The `url` column is a temporary signed download URL — sensitive while valid; treat it like a short-lived credential.
+Logical exports (dumps) of Render-managed Postgres databases. Each row is one export job. Temporary signed download URLs are intentionally not exposed by this table.
 
 Pass `postgres_id` when you can; without it, this table walks every Postgres database in the workspace.
 
@@ -14,7 +14,7 @@ Pass `postgres_id` when you can; without it, this table walks every Postgres dat
 ### Recent exports for one database
 
 ```sql+postgres
-select id, created_at, url is not null as has_url
+select id, created_at
 from   render_postgres_export
 where  postgres_id = 'dpg-XXXX'
 order  by created_at desc;

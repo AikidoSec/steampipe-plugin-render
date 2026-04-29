@@ -7,7 +7,7 @@ description: "Query Render env groups and the services they're linked to."
 
 An env group is a shared set of environment variables (and optionally secret files) that can be linked to multiple services.
 
-By default, listing returns metadata only (no `env_vars` or `secret_files`). Selecting either of those columns triggers a per-row API call to fetch the full group, so use them deliberately when querying many groups.
+This table intentionally exposes metadata only. It does not retrieve `env_vars` or `secret_files`, because the full env-group payload can contain secret values and file contents.
 
 ## Examples
 
@@ -26,16 +26,12 @@ from   render_env_group g,
        jsonb_array_elements(g.service_links) link;
 ```
 
-### Get the keys (not values) inside one env group
-
-Selecting `env_vars` triggers a hydrate that fetches the full record. Secret values come back as nulls.
+### Env groups linked to multiple services
 
 ```sql+postgres
-select name, jsonb_agg(v ->> 'key') as keys
-from   render_env_group g,
-       jsonb_array_elements(g.env_vars) v
-where  g.id = 'evg-XXXX'
-group  by name;
+select name, jsonb_array_length(service_links) as linked_services
+from   render_env_group
+where  jsonb_array_length(service_links) > 1;
 ```
 
 ### Env groups with no linked services

@@ -36,7 +36,7 @@ steampipe query "select name, type, suspended from render_service"
 | `render_custom_domain`         | Custom domains attached to web/static-site services.                                         |
 | `render_deploy`                | Deploy history of a service. Provide `service_id` for fast queries.                          |
 | `render_disk`                  | Persistent disks attached to services.                                                       |
-| `render_env_group`             | Shared env var groups. `env_vars` / `secret_files` are hydrated lazily.                      |
+| `render_env_group`             | Shared env var groups. Metadata only; secret-bearing env vars/files are not retrieved.       |
 | `render_environment`           | Environments within a project (production, staging, ...).                                    |
 | `render_header`                | Response-header rules on web/static-site services.                                           |
 | `render_job`                   | One-off jobs run against a service.                                                          |
@@ -45,7 +45,7 @@ steampipe query "select name, type, suspended from render_service"
 | `render_notification_override` | Per-service overrides of workspace notification settings.                                    |
 | `render_owner`                 | Workspaces (users/teams). The `id` is what shows up as `owner_id` on other resources.        |
 | `render_postgres`              | Render-managed Postgres databases (primaries and read replicas).                             |
-| `render_postgres_export`       | Logical export jobs of Postgres databases (signed download URLs are sensitive).              |
+| `render_postgres_export`       | Logical export jobs of Postgres databases (signed download URLs are deliberately omitted).    |
 | `render_project`               | Projects, which group environments and their resources.                                      |
 | `render_registry_credential`   | Container registry credentials.                                                              |
 | `render_route`                 | Redirect/rewrite rules on web/static-site services.                                          |

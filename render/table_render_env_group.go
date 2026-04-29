@@ -14,14 +14,10 @@ import (
 func tableRenderEnvGroup(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_env_group",
-		Description: "A shared group of environment variables (and optionally secret files) that can be linked to multiple Render services.",
+		Description: "A shared group of environment variables (and optionally secret files) that can be linked to multiple Render services. This table exposes metadata only and does not retrieve secret-bearing payloads.",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderEnvGroups,
 			KeyColumns: plugin.OptionalColumns([]string{"name", "owner_id", "environment_id"}),
-		},
-		Get: &plugin.GetConfig{
-			Hydrate:    getRenderEnvGroup,
-			KeyColumns: plugin.SingleColumn("id"),
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "The unique identifier of the env group."},
@@ -31,9 +27,6 @@ func tableRenderEnvGroup(_ context.Context) *plugin.Table {
 			{Name: "service_links", Type: proto.ColumnType_JSON, Description: "Services this env group is linked to."},
 			{Name: "created_at", Type: proto.ColumnType_TIMESTAMP, Description: "Time the env group was created."},
 			{Name: "updated_at", Type: proto.ColumnType_TIMESTAMP, Description: "Time the env group was last updated."},
-			// env_vars and secret_files require a per-row Retrieve call; only fetched when selected.
-			{Name: "env_vars", Type: proto.ColumnType_JSON, Description: "Environment variables in this group. Secret values are returned as nulls.", Hydrate: getEnvGroupDetails, Transform: transform.FromField("EnvVars")},
-			{Name: "secret_files", Type: proto.ColumnType_JSON, Description: "Secret files in this group.", Hydrate: getEnvGroupDetails, Transform: transform.FromField("SecretFiles")},
 			{Name: "title", Type: proto.ColumnType_STRING, Description: "Title of the resource.", Transform: transform.FromField("Name")},
 		},
 	}
@@ -93,48 +86,4 @@ func listRenderEnvGroups(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 		}
 	}
 	return nil, nil
-}
-
-func getRenderEnvGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
-	id := d.EqualsQualString("id")
-	if id == "" {
-		return nil, nil
-	}
-	return fetchEnvGroup(ctx, d, id)
-}
-
-// getEnvGroupDetails fetches full env group details (envVars + secretFiles)
-// for a row that came from List. Only invoked when env_vars or secret_files
-// are part of the SELECT.
-func getEnvGroupDetails(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
-	switch v := h.Item.(type) {
-	case client.EnvGroup:
-		return v, nil
-	case client.EnvGroupMeta:
-		return fetchEnvGroup(ctx, d, v.Id)
-	default:
-		return nil, fmt.Errorf("unexpected env group row type %T", h.Item)
-	}
-}
-
-func fetchEnvGroup(ctx context.Context, d *plugin.QueryData, id string) (interface{}, error) {
-	logger := plugin.Logger(ctx)
-	c, err := getClient(ctx, d)
-	if err != nil {
-		logger.Error("render_env_group.fetchEnvGroup", "connection_error", err)
-		return nil, err
-	}
-
-	resp, err := c.RetrieveEnvGroupWithResponse(ctx, id)
-	if err != nil {
-		logger.Error("render_env_group.fetchEnvGroup", "query_error", err)
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		if resp.StatusCode() == 404 {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("retrieve env_group failed: %s: %s", resp.Status(), string(resp.Body))
-	}
-	return *resp.JSON200, nil
 }

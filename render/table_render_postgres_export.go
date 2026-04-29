@@ -12,12 +12,12 @@ import (
 )
 
 // PostgresExport decorates the API export with the parent postgres ID. The
-// `url` is a temporary signed download URL.
+// download URL is intentionally not exposed because it is a temporary signed
+// credential.
 type PostgresExport struct {
 	Id         string
 	PostgresId string
 	CreatedAt  time.Time
-	Url        string
 }
 
 func tableRenderPostgresExport(_ context.Context) *plugin.Table {
@@ -33,7 +33,6 @@ func tableRenderPostgresExport(_ context.Context) *plugin.Table {
 			{Name: "id", Type: proto.ColumnType_STRING, Description: "The unique identifier of the export."},
 			{Name: "postgres_id", Type: proto.ColumnType_STRING, Description: "The ID of the Postgres database the export was taken from."},
 			{Name: "created_at", Type: proto.ColumnType_TIMESTAMP, Description: "Time the export was created."},
-			{Name: "url", Type: proto.ColumnType_STRING, Description: "Temporary signed URL to download the export, if still valid."},
 			{Name: "title", Type: proto.ColumnType_STRING, Description: "Title of the resource.", Transform: transform.FromField("Id")},
 		},
 	}
@@ -70,9 +69,6 @@ func listRenderPostgresExports(ctx context.Context, d *plugin.QueryData, h *plug
 			Id:         ex.Id,
 			PostgresId: pg.Id,
 			CreatedAt:  ex.CreatedAt,
-		}
-		if ex.Url != nil {
-			row.Url = *ex.Url
 		}
 		d.StreamListItem(ctx, row)
 		if d.RowsRemaining(ctx) == 0 {
