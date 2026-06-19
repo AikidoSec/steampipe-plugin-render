@@ -64,6 +64,33 @@ When debugging a failed query, the most useful logs are:
 - `~/.steampipe/logs/plugin-YYYY-MM-DD.log` — plugin-side errors and Render API call URLs.
 - `~/.steampipe/logs/steampipe-YYYY-MM-DD.log` — Postgres FDW side.
 
+## Dependency pins
+
+A few `go.mod` entries are deliberately held back. `steampipe-plugin-sdk/v5` (current pin
+v5.13.1; same problem persists through v5.14.x and v6.0.0 as of 2026-06-19) is written
+against the v1 line of `dgraph-io/ristretto` and the v0.0.x line of `olekukonko/tablewriter`.
+Newer majors break the SDK at compile time:
+
+- `ristretto/v2` added a generic `Key` constraint that rejects `interface{}` — breaks
+  `connection/connection_cache.go`.
+- `tablewriter v1.x` removed `SetHeader` / `SetBorder` / `SetColWidth` / `AppendBulk` /
+  `SetAutoWrapText` — breaks `logging/timing.go`.
+
+For that reason these stay pinned:
+
+- `github.com/turbot/steampipe-plugin-sdk/v5` — at v5.13.1
+- `github.com/eko/gocache/store/ristretto/v4` — at v4.2.1 (v4.3.x switched to ristretto/v2)
+- `github.com/olekukonko/tablewriter` — at v0.0.5
+
+`golang.org/x/*` security bumps are fine and should continue to flow through; the
+`fix(security)` autofix bot has already done several. The hazard is automated bumps of the
+three packages above — if one slips through, `make build` will fail with errors inside the
+SDK, not in this repo's code (that's the tell). Re-check upstream the next time we touch
+the SDK version: if the SDK has migrated to `ristretto/v2` and `tablewriter v1.x`, all three
+pins can be lifted at once.
+
+There's a matching `KEEP THESE PINNED` block at the top of `go.mod`.
+
 ## Tables
 
 17 tables, organized in tiers as the project grew:
