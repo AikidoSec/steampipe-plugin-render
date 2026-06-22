@@ -49,6 +49,11 @@ func listRenderRoutes(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 		return nil, nil
 	}
 
+	// Routes are only supported on static sites; skip all other service types.
+	if service.Type != client.StaticSite {
+		return nil, nil
+	}
+
 	c, err := getClient(ctx, d)
 	if err != nil {
 		logger.Error("render_route.listRenderRoutes", "connection_error", err)
