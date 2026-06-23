@@ -3,6 +3,7 @@ package render
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -37,12 +38,13 @@ func tableRenderKeyValue(_ context.Context) *plugin.Table {
 			{Name: "dashboard_url", Type: proto.ColumnType_STRING, Description: "URL to view the instance in the Render Dashboard."},
 			{Name: "created_at", Type: proto.ColumnType_TIMESTAMP, Description: "Time the instance was created."},
 			{Name: "updated_at", Type: proto.ColumnType_TIMESTAMP, Description: "Time the instance was last updated."},
+			{Name: "requires_internal_auth", Type: proto.ColumnType_BOOL, Description: "Whether internal connections require authentication. True when the internal connection URL includes credentials.", Hydrate: getKeyValueRequiresInternalAuth, Transform: transform.FromValue()},
 			{Name: "title", Type: proto.ColumnType_STRING, Description: "Title of the resource.", Transform: transform.FromField("Name")},
 		},
 	}
 }
 
-func listRenderKeyValue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listRenderKeyValue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {
@@ -100,7 +102,7 @@ func listRenderKeyValue(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 }
 
-func getRenderKeyValue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderKeyValue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil
@@ -125,4 +127,29 @@ func getRenderKeyValue(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 		return nil, fmt.Errorf("retrieve key_value failed: %s: %s", resp.Status(), string(resp.Body))
 	}
 	return *resp.JSON200, nil
+}
+
+func getKeyValueRequiresInternalAuth(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
+	kv := h.Item.(client.KeyValue)
+
+	logger := plugin.Logger(ctx)
+	c, err := getClient(ctx, d)
+	if err != nil {
+		logger.Error("render_key_value.getKeyValueRequiresInternalAuth", "connection_error", err)
+		return nil, err
+	}
+
+	resp, err := c.RetrieveKeyValueConnectionInfoWithResponse(ctx, kv.Id)
+	if err != nil {
+		logger.Error("render_key_value.getKeyValueRequiresInternalAuth", "query_error", err)
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("retrieve key_value connection info failed: %s: %s", resp.Status(), string(resp.Body))
+	}
+
+	return strings.Contains(resp.JSON200.InternalConnectionString, "@"), nil
 }
