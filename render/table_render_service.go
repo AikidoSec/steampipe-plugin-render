@@ -3,7 +3,6 @@ package render
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -86,16 +85,7 @@ func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 
 	for {
-		// listRenderServices is the parent hydrate for several other tables
-		// (deploy, custom_domain, header, ...), so a 429 here cascades and
-		// breaks the whole query. Retry on 429 to soften the burst.
-		resp, err := callWithRetry(ctx, func() (*client.ListServicesResponse, *http.Response, error) {
-			r, e := c.ListServicesWithResponse(ctx, params)
-			if r != nil {
-				return r, r.HTTPResponse, e
-			}
-			return r, nil, e
-		})
+		resp, err := c.ListServicesWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_service.listRenderServices", "query_error", err)
 			return nil, err

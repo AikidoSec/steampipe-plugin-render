@@ -3,7 +3,6 @@ package render
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -81,13 +80,7 @@ func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	}
 
 	for {
-		resp, err := callWithRetry(ctx, func() (*client.ListDeploysResponse, *http.Response, error) {
-			r, e := c.ListDeploysWithResponse(ctx, service.Id, params)
-			if r != nil {
-				return r, r.HTTPResponse, e
-			}
-			return r, nil, e
-		})
+		resp, err := c.ListDeploysWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_deploy.listRenderDeploys", "query_error", err)
 			return nil, err

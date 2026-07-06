@@ -3,7 +3,6 @@ package render
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -89,13 +88,7 @@ func listRenderCustomDomains(ctx context.Context, d *plugin.QueryData, h *plugin
 	}
 
 	for {
-		resp, err := callWithRetry(ctx, func() (*client.ListCustomDomainsResponse, *http.Response, error) {
-			r, e := c.ListCustomDomainsWithResponse(ctx, service.Id, params)
-			if r != nil {
-				return r, r.HTTPResponse, e
-			}
-			return r, nil, e
-		})
+		resp, err := c.ListCustomDomainsWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_custom_domain.listRenderCustomDomains", "query_error", err)
 			return nil, err
