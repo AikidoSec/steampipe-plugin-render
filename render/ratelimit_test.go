@@ -35,9 +35,10 @@ func TestRetryWait(t *testing.T) {
 			"Ratelimit-Reset": strconv.FormatInt(reset, 10),
 		})
 		got := retryWait(resp, backoff)
-		// Wait until the reset epoch (≤5s after truncation) plus up to retryJitter.
-		if got <= 3*time.Second || got > 5*time.Second+retryJitter {
-			t.Errorf("got %v, want between 3s and 5s+%v", got, retryJitter)
+
+		minWait := time.Until(time.Unix(reset, 0))
+		if got < minWait || got > 5*time.Second+retryJitter {
+			t.Errorf("got %v, want between %v and 5s+%v", got, minWait, retryJitter)
 		}
 	})
 
