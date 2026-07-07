@@ -5,39 +5,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"golang.org/x/time/rate"
 )
-
-func TestForRequest(t *testing.T) {
-	limiters := &endpointLimiters{
-		general: rate.NewLimiter(1, 1),
-		logs:    rate.NewLimiter(1, 1),
-	}
-
-	cases := []struct {
-		name   string
-		method string
-		url    string
-		want   *rate.Limiter
-	}{
-		{"general GET", http.MethodGet, "https://api.render.com/v1/services", limiters.general},
-		{"logs search GET", http.MethodGet, "https://api.render.com/v1/logs", limiters.logs},
-		{"log stream config is general", http.MethodGet, "https://api.render.com/v1/logs/streams/owner/abc", limiters.general},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest(tc.method, tc.url, nil)
-			if err != nil {
-				t.Fatalf("building request: %v", err)
-			}
-			if got := limiters.forRequest(req); got != tc.want {
-				t.Errorf("forRequest(%s %s) returned the wrong bucket", tc.method, tc.url)
-			}
-		})
-	}
-}
 
 func respWithHeaders(headers map[string]string) *http.Response {
 	h := http.Header{}

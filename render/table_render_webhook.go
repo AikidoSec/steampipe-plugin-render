@@ -25,6 +25,7 @@ type Webhook struct {
 func tableRenderWebhook(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_webhook",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "An outbound webhook configured for a Render workspace. The HMAC signing secret is deliberately not exposed.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderOwners,
@@ -47,7 +48,7 @@ func tableRenderWebhook(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderWebhooks(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderWebhooks(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	owner := h.Item.(client.Owner)
 
@@ -71,6 +72,7 @@ func listRenderWebhooks(ctx context.Context, d *plugin.QueryData, h *plugin.Hydr
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListWebhooksWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_webhook.listRenderWebhooks", "query_error", err)
@@ -111,7 +113,7 @@ func listRenderWebhooks(ctx context.Context, d *plugin.QueryData, h *plugin.Hydr
 	}
 }
 
-func getRenderWebhook(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderWebhook(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil

@@ -5,6 +5,7 @@ import (
 
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v5/rate_limiter"
 )
 
 const pluginName = "steampipe-plugin-render"
@@ -17,6 +18,22 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 		DefaultGetConfig: &plugin.GetConfig{},
 		ConnectionConfigSchema: &plugin.ConnectionConfigSchema{
 			NewInstance: ConfigInstance,
+		},
+		RateLimiters: []*rate_limiter.Definition{
+			{
+				Name:       "render_general",
+				FillRate:   perMinute(generalGetPerMin),
+				BucketSize: generalGetBurst,
+				Scope:      []string{rate_limiter.RateLimiterScopeConnection, "endpoint"},
+				Where:      "endpoint = 'general'",
+			},
+			{
+				Name:       "render_logs",
+				FillRate:   perMinute(logsGetPerMin),
+				BucketSize: logsGetBurst,
+				Scope:      []string{rate_limiter.RateLimiterScopeConnection, "endpoint"},
+				Where:      "endpoint = 'logs'",
+			},
 		},
 		TableMap: map[string]*plugin.Table{
 			"render_blueprint":             tableRenderBlueprint(ctx),

@@ -14,6 +14,7 @@ import (
 func tableRenderJob(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_job",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A one-off job (background script) run against a Render service.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -41,7 +42,7 @@ func tableRenderJob(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderJobs(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderJobs(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -67,6 +68,7 @@ func listRenderJobs(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateD
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListJobWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_job.listRenderJobs", "query_error", err)
@@ -100,7 +102,7 @@ func listRenderJobs(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateD
 	}
 }
 
-func getRenderJob(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderJob(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	serviceID := d.EqualsQualString("service_id")
 	id := d.EqualsQualString("id")
 	if serviceID == "" || id == "" {

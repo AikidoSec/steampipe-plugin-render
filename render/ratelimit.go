@@ -5,14 +5,13 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
 )
 
 // Based on https://api-docs.render.com/reference/rate-limiting
+
 const (
 	generalGetPerMin = 380
 	generalGetBurst  = 10
@@ -28,50 +27,18 @@ const (
 	retryJitter    = time.Second
 )
 
-var limiterRegistry sync.Map
-
-type endpointLimiters struct {
-	general *rate.Limiter
-	logs    *rate.Limiter
-}
-
-func (e *endpointLimiters) forRequest(req *http.Request) *rate.Limiter {
-	if strings.HasSuffix(req.URL.Path, "/logs") {
-		return e.logs
-	}
-	return e.general
-}
-
-func limitersForKey(apiKey string) *endpointLimiters {
-	if existing, ok := limiterRegistry.Load(apiKey); ok {
-		return existing.(*endpointLimiters)
-	}
-	created := &endpointLimiters{
-		general: rate.NewLimiter(perMinute(generalGetPerMin), generalGetBurst),
-		logs:    rate.NewLimiter(perMinute(logsGetPerMin), logsGetBurst),
-	}
-	actual, _ := limiterRegistry.LoadOrStore(apiKey, created)
-	return actual.(*endpointLimiters)
-}
-
 func perMinute(n int) rate.Limit {
 	return rate.Limit(float64(n) / 60.0)
 }
 
-type rateLimitTransport struct {
-	base     http.RoundTripper
-	limiters *endpointLimiters
+type retryTransport struct {
+	base http.RoundTripper
 }
 
-func (t *rateLimitTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	limiter := t.limiters.forRequest(req)
+func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	retryable := req.Body == nil || req.Body == http.NoBody
 	backoff := initialBackoff
 	for attempt := 0; ; attempt++ {
-		if err := limiter.Wait(req.Context()); err != nil {
-			return nil, err
-		}
-
 		resp, err := t.base.RoundTrip(req)
 		if err != nil {
 			return nil, err

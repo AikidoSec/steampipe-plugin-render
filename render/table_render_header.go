@@ -18,6 +18,7 @@ type Header struct {
 func tableRenderHeader(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_header",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "HTTP response header rules attached to Render static sites. (Web services don't support header-rule listing via the API.)",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -39,7 +40,7 @@ func tableRenderHeader(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderHeaders(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderHeaders(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -74,6 +75,7 @@ func listRenderHeaders(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListHeadersWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_header.listRenderHeaders", "query_error", err)

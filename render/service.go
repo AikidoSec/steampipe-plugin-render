@@ -52,9 +52,8 @@ func clientUncached(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	}
 
 	httpClient := &http.Client{
-		Transport: &rateLimitTransport{
-			base:     http.DefaultTransport,
-			limiters: limitersForKey(apiKey),
+		Transport: &retryTransport{
+			base: http.DefaultTransport,
 		},
 	}
 

@@ -13,6 +13,7 @@ import (
 func tableRenderService(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_service",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A service running on Render (web service, private service, background worker, cron job, or static site).",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderServices,
@@ -51,7 +52,7 @@ func tableRenderService(_ context.Context) *plugin.Table {
 
 const defaultPageSize = 100
 
-func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {
@@ -85,6 +86,7 @@ func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListServicesWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_service.listRenderServices", "query_error", err)
@@ -122,7 +124,7 @@ func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 }
 
-func getRenderService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil

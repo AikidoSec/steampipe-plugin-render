@@ -18,6 +18,7 @@ type Route struct {
 func tableRenderRoute(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_route",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "Redirect and rewrite rules attached to Render web or static-site services.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -41,7 +42,7 @@ func tableRenderRoute(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderRoutes(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderRoutes(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -78,6 +79,7 @@ func listRenderRoutes(ctx context.Context, d *plugin.QueryData, h *plugin.Hydrat
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListRoutesWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_route.listRenderRoutes", "query_error", err)

@@ -18,6 +18,7 @@ type RegistryCredential struct {
 func tableRenderRegistryCredential(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_registry_credential",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A container-registry credential stored in a Render workspace and used to pull private images for image-deployed services.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderOwners,
@@ -40,7 +41,7 @@ func tableRenderRegistryCredential(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderRegistryCredentials(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderRegistryCredentials(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	owner := h.Item.(client.Owner)
 
@@ -94,7 +95,7 @@ func listRenderRegistryCredentials(ctx context.Context, d *plugin.QueryData, h *
 	return nil, nil
 }
 
-func getRenderRegistryCredential(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderRegistryCredential(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil

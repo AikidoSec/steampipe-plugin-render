@@ -19,6 +19,7 @@ type Blueprint struct {
 func tableRenderBlueprint(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_blueprint",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A Render blueprint (render.yaml-driven IaC definition).",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderOwners,
@@ -45,7 +46,7 @@ func tableRenderBlueprint(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderBlueprints(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderBlueprints(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	owner := h.Item.(client.Owner)
 
@@ -70,6 +71,7 @@ func listRenderBlueprints(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListBlueprintsWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_blueprint.listRenderBlueprints", "query_error", err)
@@ -103,7 +105,7 @@ func listRenderBlueprints(ctx context.Context, d *plugin.QueryData, h *plugin.Hy
 	}
 }
 
-func getRenderBlueprint(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderBlueprint(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil
@@ -113,7 +115,7 @@ func getRenderBlueprint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 
 // getBlueprintResources hydrates the `resources` column. Only invoked when
 // `resources` is part of the SELECT.
-func getBlueprintResources(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func getBlueprintResources(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	switch v := h.Item.(type) {
 	case blueprints.BlueprintDetail:
 		return v, nil
@@ -126,7 +128,7 @@ func getBlueprintResources(ctx context.Context, d *plugin.QueryData, h *plugin.H
 	}
 }
 
-func fetchBlueprint(ctx context.Context, d *plugin.QueryData, id string) (interface{}, error) {
+func fetchBlueprint(ctx context.Context, d *plugin.QueryData, id string) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {

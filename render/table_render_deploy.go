@@ -21,6 +21,7 @@ type Deploy struct {
 func tableRenderDeploy(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_deploy",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A deploy of a Render service. Listing requires a service_id (or implicit join through render_service).",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -53,7 +54,7 @@ func tableRenderDeploy(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -80,6 +81,7 @@ func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListDeploysWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_deploy.listRenderDeploys", "query_error", err)
@@ -118,7 +120,7 @@ func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	}
 }
 
-func getRenderDeploy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderDeploy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	serviceID := d.EqualsQualString("service_id")
 	id := d.EqualsQualString("id")
 	if serviceID == "" || id == "" {

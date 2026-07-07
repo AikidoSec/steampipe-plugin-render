@@ -13,6 +13,7 @@ import (
 func tableRenderPostgres(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_postgres",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A Render-managed Postgres database.",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderPostgres,
@@ -51,7 +52,7 @@ func tableRenderPostgres(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderPostgres(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listRenderPostgres(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {
@@ -80,6 +81,7 @@ func listRenderPostgres(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListPostgresWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_postgres.listRenderPostgres", "query_error", err)
@@ -113,7 +115,7 @@ func listRenderPostgres(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 }
 
-func getRenderPostgres(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderPostgres(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil

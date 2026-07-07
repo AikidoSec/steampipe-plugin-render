@@ -13,6 +13,7 @@ import (
 func tableRenderEnvironment(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_environment",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "An environment within a Render project. Environments group resources and can be marked protected.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderProjects,
@@ -38,7 +39,7 @@ func tableRenderEnvironment(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderEnvironments(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderEnvironments(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	project := h.Item.(client.Project)
 
@@ -68,6 +69,7 @@ func listRenderEnvironments(ctx context.Context, d *plugin.QueryData, h *plugin.
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListEnvironmentsWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_environment.listRenderEnvironments", "query_error", err)
@@ -101,7 +103,7 @@ func listRenderEnvironments(ctx context.Context, d *plugin.QueryData, h *plugin.
 	}
 }
 
-func getRenderEnvironment(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderEnvironment(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil
