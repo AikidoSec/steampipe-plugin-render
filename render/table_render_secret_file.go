@@ -22,6 +22,7 @@ type SecretFile struct {
 func tableRenderSecretFile(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_secret_file",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "Names of secret files mounted into a Render service. File contents are deliberately not exposed.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -38,7 +39,7 @@ func tableRenderSecretFile(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderSecretFiles(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderSecretFiles(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -59,6 +60,7 @@ func listRenderSecretFiles(ctx context.Context, d *plugin.QueryData, h *plugin.H
 	params := &client.ListSecretFilesForServiceParams{Limit: &limit}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListSecretFilesForServiceWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_secret_file.listRenderSecretFiles", "query_error", err)

@@ -3,7 +3,6 @@ package render
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -14,6 +13,7 @@ import (
 func tableRenderService(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_service",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A service running on Render (web service, private service, background worker, cron job, or static site).",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderServices,
@@ -52,7 +52,7 @@ func tableRenderService(_ context.Context) *plugin.Table {
 
 const defaultPageSize = 100
 
-func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {
@@ -86,16 +86,8 @@ func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 
 	for {
-		// listRenderServices is the parent hydrate for several other tables
-		// (deploy, custom_domain, header, ...), so a 429 here cascades and
-		// breaks the whole query. Retry on 429 to soften the burst.
-		resp, err := callWithRetry(ctx, func() (*client.ListServicesResponse, *http.Response, error) {
-			r, e := c.ListServicesWithResponse(ctx, params)
-			if r != nil {
-				return r, r.HTTPResponse, e
-			}
-			return r, nil, e
-		})
+		d.WaitForListRateLimit(ctx)
+		resp, err := c.ListServicesWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_service.listRenderServices", "query_error", err)
 			return nil, err
@@ -132,7 +124,7 @@ func listRenderServices(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 }
 
-func getRenderService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil

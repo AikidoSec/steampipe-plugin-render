@@ -23,6 +23,7 @@ type PostgresExport struct {
 func tableRenderPostgresExport(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_postgres_export",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A logical export of a Render Postgres database. The download URL is a temporary signed link.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderPostgres,
@@ -38,7 +39,7 @@ func tableRenderPostgresExport(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderPostgresExports(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderPostgresExports(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	pg := h.Item.(client.Postgres)
 

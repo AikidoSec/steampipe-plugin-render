@@ -23,6 +23,7 @@ type LogStream struct {
 func tableRenderLogStream(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_log_stream",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "Per-resource log-stream destination overrides. Authentication tokens are not exposed.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderOwners,
@@ -39,7 +40,7 @@ func tableRenderLogStream(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderLogStreams(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderLogStreams(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	owner := h.Item.(client.Owner)
 

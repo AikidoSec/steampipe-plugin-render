@@ -13,6 +13,7 @@ import (
 func tableRenderOwner(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_owner",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A Render workspace owner. The Render API uses 'owner' to refer to a user or team workspace.",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderOwners,
@@ -33,7 +34,7 @@ func tableRenderOwner(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderOwners(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listRenderOwners(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {
@@ -55,6 +56,7 @@ func listRenderOwners(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListOwnersWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_owner.listRenderOwners", "query_error", err)
@@ -93,7 +95,7 @@ func listRenderOwners(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	}
 }
 
-func getRenderOwner(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderOwner(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil

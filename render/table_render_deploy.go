@@ -3,7 +3,6 @@ package render
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -22,6 +21,7 @@ type Deploy struct {
 func tableRenderDeploy(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_deploy",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A deploy of a Render service. Listing requires a service_id (or implicit join through render_service).",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -54,7 +54,7 @@ func tableRenderDeploy(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -81,13 +81,8 @@ func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	}
 
 	for {
-		resp, err := callWithRetry(ctx, func() (*client.ListDeploysResponse, *http.Response, error) {
-			r, e := c.ListDeploysWithResponse(ctx, service.Id, params)
-			if r != nil {
-				return r, r.HTTPResponse, e
-			}
-			return r, nil, e
-		})
+		d.WaitForListRateLimit(ctx)
+		resp, err := c.ListDeploysWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_deploy.listRenderDeploys", "query_error", err)
 			return nil, err
@@ -125,7 +120,7 @@ func listRenderDeploys(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	}
 }
 
-func getRenderDeploy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderDeploy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	serviceID := d.EqualsQualString("service_id")
 	id := d.EqualsQualString("id")
 	if serviceID == "" || id == "" {

@@ -3,7 +3,6 @@ package render
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -19,6 +18,7 @@ type CustomDomain struct {
 func tableRenderCustomDomain(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_custom_domain",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A custom domain attached to a Render web or static-site service.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -49,7 +49,7 @@ func tableRenderCustomDomain(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderCustomDomains(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderCustomDomains(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -89,13 +89,8 @@ func listRenderCustomDomains(ctx context.Context, d *plugin.QueryData, h *plugin
 	}
 
 	for {
-		resp, err := callWithRetry(ctx, func() (*client.ListCustomDomainsResponse, *http.Response, error) {
-			r, e := c.ListCustomDomainsWithResponse(ctx, service.Id, params)
-			if r != nil {
-				return r, r.HTTPResponse, e
-			}
-			return r, nil, e
-		})
+		d.WaitForListRateLimit(ctx)
+		resp, err := c.ListCustomDomainsWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_custom_domain.listRenderCustomDomains", "query_error", err)
 			return nil, err
@@ -128,7 +123,7 @@ func listRenderCustomDomains(ctx context.Context, d *plugin.QueryData, h *plugin
 	}
 }
 
-func getRenderCustomDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderCustomDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	serviceID := d.EqualsQualString("service_id")
 	id := d.EqualsQualString("id")
 	if serviceID == "" || id == "" {

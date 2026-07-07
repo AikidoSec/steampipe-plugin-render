@@ -24,6 +24,7 @@ type Snapshot struct {
 func tableRenderSnapshot(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_snapshot",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A point-in-time snapshot of a disk attached to a Render service.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderOwners,
@@ -44,7 +45,7 @@ func tableRenderSnapshot(_ context.Context) *plugin.Table {
 // listRenderSnapshots walks owner -> disks -> snapshots. Snapshots are only
 // addressable per-disk in the API, so without a disk_id qual we have to
 // enumerate disks for each owner. Filters are pushed through where possible.
-func listRenderSnapshots(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderSnapshots(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	owner := h.Item.(client.Owner)
 
@@ -69,6 +70,7 @@ func listRenderSnapshots(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		diskResp, err := c.ListDisksWithResponse(ctx, diskParams)
 		if err != nil {
 			logger.Error("render_snapshot.listRenderSnapshots", "list_disks_error", err)
@@ -95,6 +97,7 @@ func listRenderSnapshots(ctx context.Context, d *plugin.QueryData, h *plugin.Hyd
 			}
 
 			// Step 2: list snapshots for this disk.
+			d.WaitForListRateLimit(ctx)
 			snapResp, err := c.ListSnapshotsWithResponse(ctx, disk.Id)
 			if err != nil {
 				logger.Error("render_snapshot.listRenderSnapshots", "list_snapshots_error", err, "disk_id", disk.Id)

@@ -19,6 +19,7 @@ type NotificationOverride struct {
 func tableRenderNotificationOverride(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_notification_override",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "Per-service overrides of the workspace-level notification settings.",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderOwners,
@@ -35,7 +36,7 @@ func tableRenderNotificationOverride(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderNotificationOverrides(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderNotificationOverrides(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	owner := h.Item.(client.Owner)
 
@@ -63,6 +64,7 @@ func listRenderNotificationOverrides(ctx context.Context, d *plugin.QueryData, h
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListNotificationOverridesWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_notification_override.listRenderNotificationOverrides", "query_error", err)

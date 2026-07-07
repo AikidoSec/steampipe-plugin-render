@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -53,8 +51,15 @@ func clientUncached(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 		return nil
 	}
 
+	httpClient := &http.Client{
+		Transport: &retryTransport{
+			base: http.DefaultTransport,
+		},
+	}
+
 	apiClient, err := client.NewClientWithResponses(
 		apiURL,
+		client.WithHTTPClient(httpClient),
 		client.WithRequestEditorFn(authEditor),
 		client.WithRequestEditorFn(uaEditor),
 	)
@@ -62,40 +67,4 @@ func clientUncached(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 		return nil, fmt.Errorf("error creating Render client: %w", err)
 	}
 	return apiClient, nil
-}
-
-// callWithRetry invokes op and retries on HTTP 429, respecting Retry-After when
-// present and falling back to exponential backoff (capped at 30s). The closure
-// returns the typed response, the underlying *http.Response (so we can read
-// Retry-After), and any transport error. Used to soften the N-API-call burst
-// from parent-hydrated tables that walk every service in a workspace.
-func callWithRetry[T any](ctx context.Context, op func() (T, *http.Response, error)) (T, error) {
-	const maxAttempts = 6
-	var zero T
-	delay := 500 * time.Millisecond
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		resp, httpResp, err := op()
-		if err != nil {
-			return zero, err
-		}
-		if httpResp == nil || httpResp.StatusCode != http.StatusTooManyRequests {
-			return resp, nil
-		}
-		wait := delay
-		if ra := httpResp.Header.Get("Retry-After"); ra != "" {
-			if secs, perr := strconv.Atoi(ra); perr == nil && secs > 0 {
-				wait = time.Duration(secs) * time.Second
-			}
-		}
-		select {
-		case <-ctx.Done():
-			return zero, ctx.Err()
-		case <-time.After(wait):
-		}
-		delay *= 2
-		if delay > 30*time.Second {
-			delay = 30 * time.Second
-		}
-	}
-	return zero, fmt.Errorf("rate limited after %d retries", maxAttempts)
 }

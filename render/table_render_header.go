@@ -3,7 +3,6 @@ package render
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/render-oss/steampipe-plugin-render/render/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -19,6 +18,7 @@ type Header struct {
 func tableRenderHeader(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_header",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "HTTP response header rules attached to Render static sites. (Web services don't support header-rule listing via the API.)",
 		List: &plugin.ListConfig{
 			ParentHydrate: listRenderServices,
@@ -40,7 +40,7 @@ func tableRenderHeader(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderHeaders(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (interface{}, error) {
+func listRenderHeaders(ctx context.Context, d *plugin.QueryData, h *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	service := h.Item.(client.Service)
 
@@ -75,13 +75,8 @@ func listRenderHeaders(ctx context.Context, d *plugin.QueryData, h *plugin.Hydra
 	}
 
 	for {
-		resp, err := callWithRetry(ctx, func() (*client.ListHeadersResponse, *http.Response, error) {
-			r, e := c.ListHeadersWithResponse(ctx, service.Id, params)
-			if r != nil {
-				return r, r.HTTPResponse, e
-			}
-			return r, nil, e
-		})
+		d.WaitForListRateLimit(ctx)
+		resp, err := c.ListHeadersWithResponse(ctx, service.Id, params)
 		if err != nil {
 			logger.Error("render_header.listRenderHeaders", "query_error", err)
 			return nil, err

@@ -14,6 +14,7 @@ import (
 func tableRenderEnvGroup(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_env_group",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A shared group of environment variables (and optionally secret files) that can be linked to multiple Render services. This table exposes metadata only and does not retrieve secret-bearing payloads.",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderEnvGroups,
@@ -32,7 +33,7 @@ func tableRenderEnvGroup(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderEnvGroups(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listRenderEnvGroups(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {

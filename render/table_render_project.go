@@ -13,6 +13,7 @@ import (
 func tableRenderProject(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_project",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A Render project. Projects group together environments and the resources that belong to them.",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderProjects,
@@ -35,7 +36,7 @@ func tableRenderProject(_ context.Context) *plugin.Table {
 	}
 }
 
-func listRenderProjects(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func listRenderProjects(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	logger := plugin.Logger(ctx)
 	c, err := getClient(ctx, d)
 	if err != nil {
@@ -57,6 +58,7 @@ func listRenderProjects(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListProjectsWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_project.listRenderProjects", "query_error", err)
@@ -90,7 +92,7 @@ func listRenderProjects(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 }
 
-func getRenderProject(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+func getRenderProject(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	id := d.EqualsQualString("id")
 	if id == "" {
 		return nil, nil

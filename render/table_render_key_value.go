@@ -14,6 +14,7 @@ import (
 func tableRenderKeyValue(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "render_key_value",
+		Tags:        map[string]string{"endpoint": "general"},
 		Description: "A Render Key Value (Redis-compatible) instance.",
 		List: &plugin.ListConfig{
 			Hydrate:    listRenderKeyValue,
@@ -69,6 +70,7 @@ func listRenderKeyValue(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	}
 
 	for {
+		d.WaitForListRateLimit(ctx)
 		resp, err := c.ListKeyValueWithResponse(ctx, params)
 		if err != nil {
 			logger.Error("render_key_value.listRenderKeyValue", "query_error", err)

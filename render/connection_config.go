@@ -9,7 +9,7 @@ type renderConfig struct {
 	APIURL *string `hcl:"api_url"`
 }
 
-func ConfigInstance() interface{} {
+func ConfigInstance() any {
 	return &renderConfig{}
 }
 
